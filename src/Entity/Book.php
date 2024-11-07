@@ -2,7 +2,10 @@
 
 namespace App\Entity;
 
+use App\Enum\BookStatus;
 use App\Repository\BookRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -17,17 +20,11 @@ class Book
     #[ORM\Column(length: 255)]
     private ?string $title = null;
 
-    #[ORM\Column(type: Types::ARRAY)]
-    private array $authors = [];
-
     #[ORM\Column(length: 255)]
     private ?string $isbn = null;
 
     #[ORM\Column(length: 255)]
     private ?string $cover = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $editor = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $editedAt = null;
@@ -41,8 +38,27 @@ class Book
     #[ORM\Column(length: 255)]
     private ?BookStatus $status = null;
 
-    #[ORM\Column(type: Types::ARRAY)]
-    private array $comments = [];
+    #[ORM\ManyToOne(inversedBy: 'books')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Editor $editor = null;
+
+    /**
+     * @var Collection<int, Author>
+     */
+    #[ORM\ManyToMany(targetEntity: Author::class, inversedBy: 'books')]
+    private Collection $authors;
+
+    /**
+     * @var Collection<int, Comment>
+     */
+    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'book')]
+    private Collection $comments;
+
+    public function __construct()
+    {
+        $this->authors = new ArrayCollection();
+        $this->comments = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -57,18 +73,6 @@ class Book
     public function setTitle(string $title): static
     {
         $this->title = $title;
-
-        return $this;
-    }
-
-    public function getAuthors(): array
-    {
-        return $this->authors;
-    }
-
-    public function setAuthors(array $authors): static
-    {
-        $this->authors = $authors;
 
         return $this;
     }
@@ -93,18 +97,6 @@ class Book
     public function setCover(string $cover): static
     {
         $this->cover = $cover;
-
-        return $this;
-    }
-
-    public function getEditor(): ?string
-    {
-        return $this->editor;
-    }
-
-    public function setEditor(string $editor): static
-    {
-        $this->editor = $editor;
 
         return $this;
     }
@@ -157,14 +149,68 @@ class Book
         return $this;
     }
 
-    public function getComments(): array
+    public function getEditor(): ?Editor
+    {
+        return $this->editor;
+    }
+
+    public function setEditor(?Editor $editor): static
+    {
+        $this->editor = $editor;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Author>
+     */
+    public function getAuthors(): Collection
+    {
+        return $this->authors;
+    }
+
+    public function addAuthor(Author $author): static
+    {
+        if (!$this->authors->contains($author)) {
+            $this->authors->add($author);
+        }
+
+        return $this;
+    }
+
+    public function removeAuthor(Author $author): static
+    {
+        $this->authors->removeElement($author);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function getComments(): Collection
     {
         return $this->comments;
     }
 
-    public function setComments(array $comments): static
+    public function addComment(Comment $comment): static
     {
-        $this->comments = $comments;
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setBook($this);
+        }
+
+        return $this;
+    }
+
+    public function removeComment(Comment $comment): static
+    {
+        if ($this->comments->removeElement($comment)) {
+            // set the owning side to null (unless already changed)
+            if ($comment->getBook() === $this) {
+                $comment->setBook(null);
+            }
+        }
 
         return $this;
     }
