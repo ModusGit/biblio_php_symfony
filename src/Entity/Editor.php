@@ -22,7 +22,7 @@ class Editor
     /**
      * @var Collection<int, Book>
      */
-    #[ORM\OneToMany(targetEntity: Book::class, mappedBy: 'editor')]
+    #[ORM\OneToMany(targetEntity: Book::class, mappedBy: 'editor', orphanRemoval: true)]
     private Collection $books;
 
     public function __construct()

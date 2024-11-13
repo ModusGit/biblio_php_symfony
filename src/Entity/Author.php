@@ -30,7 +30,7 @@ class Author
     /**
      * @var Collection<int, Book>
      */
-    #[ORM\ManyToMany(targetEntity: Book::class, mappedBy: 'authors')]
+    #[ORM\ManyToMany(targetEntity: Book::class, inversedBy: 'authors')]
     private Collection $books;
 
     public function __construct()
@@ -103,7 +103,6 @@ class Author
     {
         if (!$this->books->contains($book)) {
             $this->books->add($book);
-            $book->addAuthor($this);
         }
 
         return $this;
@@ -111,9 +110,7 @@ class Author
 
     public function removeBook(Book $book): static
     {
-        if ($this->books->removeElement($book)) {
-            $book->removeAuthor($this);
-        }
+        $this->books->removeElement($book);
 
         return $this;
     }
